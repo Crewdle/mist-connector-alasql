@@ -14,11 +14,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlaSqlQueryFileConnector = void 0;
 const alasql_1 = __importDefault(require("alasql"));
+const papaparse_1 = __importDefault(require("papaparse"));
 class AlaSqlQueryFileConnector {
     executeQuery(fileContent, query, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const fileQuery = query.replaceAll('FROM file', `FROM CSV("${fileContent}", {headers: ${options.headers}, separator: "${options.separator}", quote: "${options.quote === '"' ? '\\"' : options.quote}"})`);
-            const result = yield alasql_1.default.promise(fileQuery);
+            const parsedContent = papaparse_1.default.parse(fileContent, { header: true });
+            const data = [];
+            for (const row of parsedContent.data) {
+                const newRow = {};
+                for (const key in row) {
+                    if (!isNaN(Number(row[key]))) {
+                        newRow[key] = Number(row[key]);
+                    }
+                    else {
+                        newRow[key] = row[key];
+                    }
+                }
+                data.push(newRow);
+            }
+            if (data.length === 0) {
+                throw new Error('No data found in the file');
+            }
+            const headers = Object.keys(data[0]);
+            const columns = headers.map((header) => `${header} ${typeof data[0][header] === 'string' ? 'STRING' : 'INT'}`);
+            (0, alasql_1.default)(`DROP TABLE IF EXISTS file`);
+            (0, alasql_1.default)(`CREATE TABLE file (${columns.join(', ')})`);
+            alasql_1.default.tables.file.data = data;
+            const result = (0, alasql_1.default)(query);
+            (0, alasql_1.default)(`DROP TABLE file`);
             return JSON.stringify(result);
         });
     }

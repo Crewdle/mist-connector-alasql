@@ -25,10 +25,12 @@
   "devDependencies": {
     "@crewdle/web-sdk-types": "^1.0.30",
     "@types/node": "^22.0.0",
+    "@types/papaparse": "^5.3.15",
     "typescript": "^5.5.4"
   },
   "dependencies": {
     "alasql": "^4.6.1",
+    "papaparse": "^5.5.1",
     "xlsx": "^0.18.5"
   }
 }
